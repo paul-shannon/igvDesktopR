@@ -1,0 +1,12 @@
+Package: igvR
+Type: Package
+Title: Control IGV, the Integrative Genomics Viewer, from R
+Version: 0.99.8
+Date: 2016-02-23
+Author: Paul Shannon
+Maintainer:  <pshannon@systemsbiology.org>
+Depends: R (>= 2.13.0)
+Suggests: RUnit
+Description:  Use IGV's socket interface from R, to display genomic data and files.
+License: GPL
+LazyLoad: yes

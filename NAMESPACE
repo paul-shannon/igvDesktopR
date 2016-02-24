@@ -1,0 +1,12 @@
+exportClasses(igvR)
+
+exportMethods(
+  connected,
+  goto,
+  loadFile,
+  displayBedTable
+  )
+
+export(
+   igvR
+   )
