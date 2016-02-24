@@ -3,9 +3,9 @@ a simple R interface to igv (http://igv.org) a java program for viewing genome t
 
 sample use, with IGV already running on localhost
 ````
-    library(igvR)
-    igv <- igvR()   # localhost, standard port, hg38 are default values
-    connected(igv)  # TRUE
+library(igvR)
+igv <- igvR()   # localhost, standard port, hg38 are default values
+connected(igv)  # TRUE
 ````
 Load a tiny 2-line bed file included with the package, from the UCSC website BED format documentation  
 ````  
