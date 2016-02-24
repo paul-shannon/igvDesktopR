@@ -9,7 +9,7 @@ connected(igv)  # TRUE
 ````
 Load a tiny 2-line bed file included with the package, from the UCSC website BED format documentation  
 ````  
-bed.file <- system.path(package="igvR", "extdata", "sample.bed")  # 2 lines only, from UCSC website
+bed.file <- system.file(package="igvR", "extdata", "sample.bed")
 stopifnot(file.exists(bed.file))
 loadFile(igv, bed.file)
 goto(igv, "chr22", 500, 6500)
