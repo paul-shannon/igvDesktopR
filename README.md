@@ -27,3 +27,27 @@ tbl <- data.frame(chr=chr, start=start, end=end, name=name, score=score, strand=
 displayBedTable(igv, tbl, name="3 motifs")
 goto(igv, "chr1", start[1] - 200, end[3] + 200)
 ````    
+
+Create and display a GWAS table, with 10 SNPs
+
+````
+   count <- 10
+
+    # GWAS file must contain four columns (case-insensitive):
+    #   CHR: chromosome (aliases chr, chromosome)
+    #    BP: nucleotide location (aliases bp, pos, position)
+    #   SNP: SNP identifier (aliases snp, rs, rsid, rsnum, id, marker, markername)
+    #     P: p-value for the association (aliases p, pval, p-value, pvalue, p.value)
+
+   chr <- rep("chr1", count)
+   bp <- seq(from=1000, by=10, length.out=10)
+   snp <- paste("rs", 1:10, sep="")
+   exponents <- as.integer(runif(count, 3, 40))
+   base <- runif(count, 1, 10)
+   p <- unlist(lapply(1:count, function(i) base[i]^-exponents[i]))
+
+   tbl <- data.frame(CHR=chr, BP=bp, SNP=snp, P=p, stringsAsFactors=FALSE)
+
+   result <- displayGWASTable(igv, tbl, name="10 gwas snps")
+   checkEquals(result, "OK\n")
+   result <- goto(igv, "chr1", bp[1] - 20, bp[count] + 20)
