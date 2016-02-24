@@ -4,7 +4,8 @@ exportMethods(
   connected,
   goto,
   loadFile,
-  displayBedTable
+  displayBedTable,
+  displayGWASTable
   )
 
 export(

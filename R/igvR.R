@@ -8,6 +8,7 @@
 setGeneric('loadFile',         signature='obj', function(obj, filename) standardGeneric ('loadFile'))
 setGeneric('goto',             signature='obj', function(obj, chrom, start, end) standardGeneric ('goto'))
 setGeneric('displayBedTable',  signature='obj', function(obj, tbl, name) standardGeneric ('displayBedTable'))
+setGeneric('displayGWASTable',  signature='obj', function(obj, tbl, name) standardGeneric ('displayGWASTable'))
 setGeneric('connected',        signature='obj', function(obj) standardGeneric ('connected'))
 #----------------------------------------------------------------------------------------------------
 igvR <- function(host="localhost", port=60151, genome="hg38")
@@ -35,6 +36,7 @@ setMethod('loadFile', 'igvR',
 
   function (obj, filename){
      msg <- paste("load",filename, "\n")
+     printf("igvR loadFile, filename %s, msg %s", filename, msg)
      result <- .send(obj@socket, msg)
      invisible(result)
      })
@@ -53,9 +55,37 @@ setMethod('goto', 'igvR',
 setMethod('displayBedTable', 'igvR',
 
   function (obj, tbl, name){
+        # some simple sanity checks.
+     stopifnot("data.frame" %in% is(tbl))
+     stopifnot(ncol(tbl) >= 3)
+     stopifnot(length(grep("^chr", tbl[,1])) == nrow(tbl))
+     browser()
+     stopifnot("numeric" %in% is(tbl[,2]))
+     stopifnot("numeric" %in% is(tbl[,3]))
+
      name <- gsub(" ", ".", name);
      tempFile <- sprintf("%s/%s.bed", tempdir(), name)
      write.table(tbl, file=tempFile, row.names=FALSE, col.names=FALSE, quote=FALSE, sep="\t")
+     result <- loadFile(obj, tempFile)
+     invisible(result)
+     })
+
+#----------------------------------------------------------------------------------------------------
+# see http://www.broadinstitute.org/software/igv/GWAS for table format information
+
+setMethod('displayGWASTable', 'igvR',
+
+  function (obj, tbl, name){
+        # some simple sanity checks.
+     stopifnot("data.frame" %in% is(tbl))
+     stopifnot(all(c("CHR", "BP", "SNP", "P") %in% colnames(tbl)))
+     stopifnot(length(grep("^chr", tbl[, "CHR"])) == nrow(tbl))
+     stopifnot("numeric" %in% is(tbl[,"BP"]))
+     stopifnot("numeric" %in% is(tbl[, "P"]))
+
+     name <- gsub(" ", ".", name);
+     tempFile <- sprintf("%s/%s.gwas", tempdir(), name)
+     write.table(tbl, file=tempFile, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
      result <- loadFile(obj, tempFile)
      invisible(result)
      })
