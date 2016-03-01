@@ -1,0 +1,31 @@
+<!--
+% \VignetteIndexEntry{The igvR Package}
+% \VignetteDepends{igvR}
+% \VignetteEngine{knitr::knitr}
+-->
+
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+```
+
+# The igvR Package
+
+**Package**: `r Biocpkg("igvR")`<br />
+**Authors**: `r packageDescription("igvR")[["Author"]] `<br />
+**Modified**: 1 March, 2016<br />
+**Compiled**: `r date()`
+
+## Overview
+
+This R package provides a simple connection between an R session and an (already running) instance of desktop *IGV*,
+the [Integrated Genomics Viewer](http://www.broadinstitute.org/igv/home) from the Broad Institute, created by
+Jim Robinson and colleagues.  We use the [socket interface](https://www.broadinstitute.org/igv/PortCommands).
+
+## Session info
+
+Here is the output of `sessionInfo()` on the system on which this
+document was compiled:
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```

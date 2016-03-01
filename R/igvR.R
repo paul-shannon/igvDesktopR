@@ -5,6 +5,8 @@
                     )
 
 #----------------------------------------------------------------------------------------------------
+printf <- function(...) print(noquote(sprintf(...)))
+#----------------------------------------------------------------------------------------------------
 setGeneric('loadFile',         signature='obj', function(obj, filename) standardGeneric ('loadFile'))
 setGeneric('goto',             signature='obj', function(obj, chrom, start, end) standardGeneric ('goto'))
 setGeneric('displayBedTable',  signature='obj', function(obj, tbl, name) standardGeneric ('displayBedTable'))
@@ -59,7 +61,6 @@ setMethod('displayBedTable', 'igvR',
      stopifnot("data.frame" %in% is(tbl))
      stopifnot(ncol(tbl) >= 3)
      stopifnot(length(grep("^chr", tbl[,1])) == nrow(tbl))
-     browser()
      stopifnot("numeric" %in% is(tbl[,2]))
      stopifnot("numeric" %in% is(tbl[,3]))
 
@@ -82,6 +83,7 @@ setMethod('displayGWASTable', 'igvR',
      stopifnot(length(grep("^chr", tbl[, "CHR"])) == nrow(tbl))
      stopifnot("numeric" %in% is(tbl[,"BP"]))
      stopifnot("numeric" %in% is(tbl[, "P"]))
+     stopifnot(all(tbl$P > 0))
 
      name <- gsub(" ", ".", name);
      tempFile <- sprintf("%s/%s.gwas", tempdir(), name)
