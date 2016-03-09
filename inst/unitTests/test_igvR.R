@@ -9,17 +9,38 @@ if(!exists("igv"))
 runTests <- function()
 {
    test_connected()
+   clearAllTracks(igv)
    test_sampleBedFile()
    test_goto()
    test_displayBedTable()
    test_displayGWASTable()
+   test_displayScoredFeatures()
+   test_displayVcfRegion()
 
 } # runTests
+#------------------------------------------------------------------------------------------------------------------------
+test_constructorArgs <- function()
+{
+   printf("--- test_constructorArgs")
+   disconnect(igv)
+   vcfDirectory <- system.file(package="igvR", "inst", "extdata", "vcf")
+   checkTrue(file.axists(vcfDirectory))
+   genome <- "hg38"
+
+   igv <<- igvR(host="localhost", port=60151, genome=genome, vcfDirectory)
+   checkTrue(connected(igv))
+   checkEquals(getVcfDirectory(igv), vcfDirectory);
+   checkEquals(getGenome(igv), genome)
+
+
+
+} # test_connected
 #------------------------------------------------------------------------------------------------------------------------
 test_connected <- function()
 {
     printf("--- test_connected")
     checkTrue(connected(igv))
+
 
 } # test_connected
 #------------------------------------------------------------------------------------------------------------------------
@@ -31,6 +52,9 @@ test_sampleBedFile = function ()
 {
   printf("--- test_sampleBedFile");
 
+  if(!exists("igv"))
+      igv <- igvR()
+
   full.path <- system.file(package="igvR", "extdata", "sample.bed")
   result <- loadFile(igv, full.path)
   checkEquals(result, "OK\n");
@@ -39,7 +63,10 @@ test_sampleBedFile = function ()
 #------------------------------------------------------------------------------------------------------------------------
 test_goto <- function()
 {
-   printf("--- test_goto")
+  printf("--- test_goto")
+  if(!exists("igv"))
+      igv <- igvR()
+
    goto(igv, "chr22", 800, 6200)
 
 } # test_goto
@@ -55,6 +82,8 @@ test_displayBedTable <- function()
    strand <- rep("+", 3)
    tbl <- data.frame(chr=chr, start=start, end=end, name=name, score=score, strand=strand, stringsAsFactors=FALSE)
 
+  if(!exists("igv"))
+      igv <- igvR()
 
    result <- displayBedTable(igv, tbl, name="3 motifs")
    checkEquals(result, "OK\n")
@@ -82,6 +111,9 @@ test_displayGWASTable <- function()
    p <- unlist(lapply(1:count, function(i) base[i]^-exponents[i]))
 
    tbl <- data.frame(CHR=chr, BP=bp, SNP=snp, P=p, stringsAsFactors=FALSE)
+   if(!exists("igv"))
+      igv <- igvR()
+
 
    result <- displayGWASTable(igv, tbl, name="10 gwas snps")
    checkEquals(result, "OK\n")
@@ -89,6 +121,78 @@ test_displayGWASTable <- function()
    checkEquals(result, "OK\n")
 
 } # test_displayGWASTable
+#------------------------------------------------------------------------------------------------------------------------
+test_displayScoredFeatures <- function()
+{
+   print("--- test_displayScoredFeatures")
+   count <- 8
+   chr <- rep("chr5", count)
+   start <- c(88364636, 88364636, 88364787, 88365143, 88365146, 88365146, 88365146, 88365168)
+   end <-   c(88364651, 88364651, 88364821, 88365165, 88365165, 88365165, 88365165, 88365187)
+   feature.names <- sprintf("FP.%02d", 1:count)
+   score <- as.integer(runif(count, 1, 100))
+   tbl <- data.frame(chr=chr, start=start, end=end, featureName=feature.names, test_fp=score)
+
+   if(!exists("igv"))
+      igv <- igvR()
+
+   result <- displayScoredFeatures(igv, tbl)
+   goto(igv, "chr5", start[1] - 200, end[count] + 200)
+
+} # test_displayScoredFeatures
+#------------------------------------------------------------------------------------------------------------------------
+private_test_displayVcfRegion <- function()
+{
+   printf("--- test_displayVcfRegion")
+
+   vcfDirectory <- system.file(package="igvR", "extdata", "vcf")
+   checkTrue(file.exists(file.path(vcfDirectory, "chr5-sub.vcf.gz")))
+   checkTrue(file.exists(file.path(vcfDirectory, "chr5-sub.vcf.gz.tbi")))
+
+   igv <- igvR()
+
+   checkTrue(connected(igv))
+
+      # a 37.5kb region around the several mef2c transcription start sites
+   start <- 88873095
+   stop <-  88910640
+
+   apoe.dementia.samples <- c("002_S_1268", "002_S_4521", "003_S_1057", "06_S_4346", "006_S_4546")
+   control.samples       <- c("002_S_0413", "002_S_0685", "002_S_1261", "002_S_1280", "002_S_4213")
+
+   displayVcfRegion(igv, "chr5", start, stop, vcfDirectory, sampleIDs=apoe.dementia.samples)
+   displayVcfRegion(igv, "chr5", start, stop, vcfDirectory, sampleIDs=control.samples)
+
+} # test_displayVcfRegion
+#------------------------------------------------------------------------------------------------------------------------
+test_displayVcfRegion <- function()
+{
+   printf("--- test_displayVcfRegion")
+
+   vcfDirectory <- system.file(package="igvR", "extdata", "vcf")
+   checkTrue(file.exists(file.path(vcfDirectory, "chr22-sub.vcf.gz")))
+   checkTrue(file.exists(file.path(vcfDirectory, "chr22-sub.vcf.gz.tbi")))
+
+   if(!exists("igv"))
+       igv <- igvR()
+
+   checkTrue(connected(igv))
+
+      # a 20kb region
+   start <- 49901760
+   end   <- 49921796
+
+   group.1 <- c("HG00096", "HG00101")
+   group.2 <- c("HG00097", "HG00099", "HG00100")
+
+      # display all samples in 1 track, then two more tracks with 2 and 3 samples respectively
+   displayVcfRegion(igv, "chr22", start, end, vcfDirectory)
+   displayVcfRegion(igv, "chr22", start, end, vcfDirectory, sampleIDs=group.1)
+   displayVcfRegion(igv, "chr22", start, end, vcfDirectory, sampleIDs=group.2)
+
+   goto(igv, "chr22", start, end)
+
+} # test_displayVcfRegion
 #------------------------------------------------------------------------------------------------------------------------
 # functions stolen from the Biocondcutor sradb package, used as an guide to early development.
 # IGVsocket <- function(host='localhost', port=60151)

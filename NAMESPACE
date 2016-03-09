@@ -1,11 +1,17 @@
 exportClasses(igvR)
 
 exportMethods(
-  connected,
-  goto,
-  loadFile,
-  displayBedTable,
-  displayGWASTable
+   connected,
+   disconnect,
+   getGenome,
+   goto,
+   gotoAll,
+   loadFile,
+   displayBedTable,
+   displayGWASTable,
+   displayScoredFeatures,
+   displayVcfRegion,
+   clearAllTracks
   )
 
 export(

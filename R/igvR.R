@@ -1,19 +1,28 @@
 #----------------------------------------------------------------------------------------------------
 .igvR <- setClass ("igvR",
                    representation = representation(socket="socket",
-                                                   genome="character")
+                                                   genome="character",
+                                                   quiet="logical")
                     )
 
 #----------------------------------------------------------------------------------------------------
 printf <- function(...) print(noquote(sprintf(...)))
 #----------------------------------------------------------------------------------------------------
-setGeneric('loadFile',         signature='obj', function(obj, filename) standardGeneric ('loadFile'))
-setGeneric('goto',             signature='obj', function(obj, chrom, start, end) standardGeneric ('goto'))
-setGeneric('displayBedTable',  signature='obj', function(obj, tbl, name) standardGeneric ('displayBedTable'))
-setGeneric('displayGWASTable',  signature='obj', function(obj, tbl, name) standardGeneric ('displayGWASTable'))
-setGeneric('connected',        signature='obj', function(obj) standardGeneric ('connected'))
+setGeneric('connected',             signature='obj', function(obj) standardGeneric ('connected'))
+setGeneric('disconnect',            signature='obj', function(obj) standardGeneric ('disconnect'))
+setGeneric('getGenome',             signature='obj', function(obj) standardGeneric('getGenome'))
+setGeneric('getVcfDirectory',       signature='obj', function(obj) standardGeneric('getVcfDirectory'))
+setGeneric('loadFile',              signature='obj', function(obj, filename) standardGeneric ('loadFile'))
+setGeneric('goto',                  signature='obj', function(obj, chrom, start, end) standardGeneric ('goto'))
+setGeneric('gotoAll',               signature='obj', function(obj) standardGeneric ('gotoAll'))
+setGeneric('clearAllTracks',        signature='obj', function(obj) standardGeneric ('clearAllTracks'))
+setGeneric('displayBedTable',       signature='obj', function(obj, tbl, name) standardGeneric ('displayBedTable'))
+setGeneric('displayGWASTable',      signature='obj', function(obj, tbl, name) standardGeneric ('displayGWASTable'))
+setGeneric('displayScoredFeatures', signature='obj', function(obj, tbl, quiet=TRUE) standardGeneric ('displayScoredFeatures'))
+setGeneric('displayVcfRegion',      signature='obj', function(obj, chrom, start, end, vcfDirectory,
+                                                              sampleIDs=character()) standardGeneric ('displayVcfRegion'))
 #----------------------------------------------------------------------------------------------------
-igvR <- function(host="localhost", port=60151, genome="hg38")
+igvR <- function(host="localhost", port=60151, genome="hg38", quiet=TRUE)
 {
   socket = try(make.socket(host,port))
 
@@ -21,7 +30,7 @@ igvR <- function(host="localhost", port=60151, genome="hg38")
     stop(sprintf("Make sure that IGV is running on host %s and that IGV is set to accept commands on port %d",host,port))
     }
 
-  .igvR(socket=socket, genome=genome)
+  .igvR(socket=socket, genome=genome, quiet=quiet)
 
 } # igvR, the constructor
 #----------------------------------------------------------------------------------------------------
@@ -34,11 +43,25 @@ setMethod('connected', 'igvR',
      })
 
 #----------------------------------------------------------------------------------------------------
+setMethod('disconnect', 'igvR',
+
+  function (obj){
+     close(obj@socket)
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('getGenome', 'igvR',
+
+  function (obj){
+     obj@genome
+     })
+
+#----------------------------------------------------------------------------------------------------
 setMethod('loadFile', 'igvR',
 
   function (obj, filename){
      msg <- paste("load",filename, "\n")
-     printf("igvR loadFile, filename %s, msg %s", filename, msg)
+     if(!obj@quiet) printf("igvR loadFile, filename %s, msg %s", filename, msg)
      result <- .send(obj@socket, msg)
      invisible(result)
      })
@@ -49,6 +72,24 @@ setMethod('goto', 'igvR',
   function (obj, chrom, start, end){
      region <- sprintf("%s:%d-%d", chrom, start, end);
      msg <- paste("goto", region, "\n")
+     result <- .send(obj@socket, msg)
+     invisible(result)
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('gotoAll', 'igvR',
+
+  function (obj){
+     msg <- paste("goto all","\n")
+     result <- .send(obj@socket, msg)
+     invisible(result)
+     })
+
+#----------------------------------------------------------------------------------------------------
+setMethod('clearAllTracks', 'igvR',
+
+  function (obj){
+     msg <- paste("new","\n")
      result <- .send(obj@socket, msg)
      invisible(result)
      })
@@ -67,6 +108,43 @@ setMethod('displayBedTable', 'igvR',
      name <- gsub(" ", ".", name);
      tempFile <- sprintf("%s/%s.bed", tempdir(), name)
      write.table(tbl, file=tempFile, row.names=FALSE, col.names=FALSE, quote=FALSE, sep="\t")
+     result <- loadFile(obj, tempFile)
+     invisible(result)
+     })
+
+#----------------------------------------------------------------------------------------------------
+# use the igv format: https://www.broadinstitute.org/software/igv/IGV
+# An IGV file (.igv) is a tab-delimited text file that defines
+# tracks. The first row contains column headings for chromosome, start
+# location, end location, and feature followed by the name of each
+# track defined in the .igv file. Each subsequent row contains a locus
+# and the associated numeric values for each track. IGV interprets the
+# first four columns as chromosome, start location, end location, and
+# feature name regardless of the column headings in the file. IGV uses
+# the column headings for the fifth and subsequent columns as track
+# names. Feature names are not displayed in IGV.
+
+setMethod('displayScoredFeatures', 'igvR',
+
+  function (obj, tbl, quiet=TRUE){
+        # some simple sanity checks.
+     stopifnot("data.frame" %in% is(tbl))
+     stopifnot(ncol(tbl) >= 5)
+     stopifnot(length(grep("^chr", tbl[,1])) == nrow(tbl))
+     stopifnot(tolower(colnames(tbl)[1]) %in% c("chr", "chrom", "chromosome", "seqname", "seqnames"))
+     stopifnot(tolower(colnames(tbl)[2:3]) == c("start", "end"))
+     stopifnot("numeric" %in% is(tbl[,2]))
+     stopifnot("numeric" %in% is(tbl[,3]))
+     stopifnot("numeric" %in% is(tbl[,5]))
+
+     tbl <- tbl[order(tbl$start),]
+     tempFile <- tempfile(fileext=".igv")
+
+     if(!obj@quiet){
+        message(sprintf("displayScoredFeatures writing to temp file %s", tempFile))
+        }
+
+     write.table(tbl, file=tempFile, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t")
      result <- loadFile(obj, tempFile)
      invisible(result)
      })
@@ -93,6 +171,38 @@ setMethod('displayGWASTable', 'igvR',
      })
 
 #----------------------------------------------------------------------------------------------------
+setMethod('displayVcfRegion', 'igvR',
+
+   function(obj, chrom, start, end, vcfDirectory, sampleIDs=character()) {
+      stopifnot(grepl("^chr", chrom))
+      filenames <- grep(chrom, list.files(vcfDirectory), value=TRUE, ignore.case=TRUE)
+      if(!obj@quiet) printf("  chrom filenames: '%s'", paste(filenames, collapse=' ,'))
+      gz.filename <- grep(".gz$", filenames, value=TRUE)
+      gz.path <- file.path(vcfDirectory, gz.filename)
+      if(!obj@quiet) printf("  gz.filename: '%s'", gz.filename);
+      stopifnot(nchar(gz.filename) > 5)
+      stopifnot(file.exists(gz.path))
+      tbi.filename <- paste(gz.filename, ".tbi", sep="")
+      tbi.path <- file.path(vcfDirectory, tbi.filename)
+      stopifnot(file.exists(tbi.path))
+      gr <- GRanges(chrom, IRanges(start, end))
+      print(ranges(gr))
+      #browser()
+      params <- ScanVcfParam(which=gr, samples=sampleIDs)
+      vcf <- readVcf(TabixFile(gz.path), "hg38", params)
+      #browser()
+      tempFile <- tempfile(fileext=".vcf")
+      if(!obj@quiet) printf("  about to write region of vcf to '%s'", tempFile)
+      writeVcf(vcf, tempFile)
+      if(!obj@quiet) printf("   about to gzip");
+      tempFile.gz <- sprintf("%s.gz", tempFile)
+      bgzip(tempFile, dest=tempFile.gz, overwrite=TRUE)
+      if(!obj@quiet) printf("   about to index");
+      tempFile.gz.tbi <- indexTabix(tempFile.gz, format="vcf")
+      loadFile(obj, tempFile.gz)
+      }) # vcfRegionDisplay
+
+#------------------------------------------------------------------------------------------------------------------------
 .send <- function(socket, text)
 {
   write.socket(socket, text)
