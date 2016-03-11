@@ -19,7 +19,7 @@ setGeneric('clearAllTracks',        signature='obj', function(obj) standardGener
 setGeneric('displayBedTable',       signature='obj', function(obj, tbl, name) standardGeneric ('displayBedTable'))
 setGeneric('displayGWASTable',      signature='obj', function(obj, tbl, name) standardGeneric ('displayGWASTable'))
 setGeneric('displayScoredFeatures', signature='obj', function(obj, tbl, quiet=TRUE) standardGeneric ('displayScoredFeatures'))
-setGeneric('displayVcfRegion',      signature='obj', function(obj, chrom, start, end, vcfDirectory,
+setGeneric('displayVcfRegion',      signature='obj', function(obj, chrom, start, end, vcfFilename,
                                                               sampleIDs=character()) standardGeneric ('displayVcfRegion'))
 #----------------------------------------------------------------------------------------------------
 igvR <- function(host="localhost", port=60151, genome="hg38", quiet=TRUE)
@@ -173,23 +173,15 @@ setMethod('displayGWASTable', 'igvR',
 #----------------------------------------------------------------------------------------------------
 setMethod('displayVcfRegion', 'igvR',
 
-   function(obj, chrom, start, end, vcfDirectory, sampleIDs=character()) {
-      stopifnot(grepl("^chr", chrom))
-      filenames <- grep(chrom, list.files(vcfDirectory), value=TRUE, ignore.case=TRUE)
+  function(obj, chrom, start, end, vcfFilename, sampleIDs=character()) {
+      stopifnot(file.exists(vcfFilename))
       if(!obj@quiet) printf("  chrom filenames: '%s'", paste(filenames, collapse=' ,'))
-      gz.filename <- grep(".gz$", filenames, value=TRUE)
-      gz.path <- file.path(vcfDirectory, gz.filename)
-      if(!obj@quiet) printf("  gz.filename: '%s'", gz.filename);
-      stopifnot(nchar(gz.filename) > 5)
-      stopifnot(file.exists(gz.path))
-      tbi.filename <- paste(gz.filename, ".tbi", sep="")
-      tbi.path <- file.path(vcfDirectory, tbi.filename)
-      stopifnot(file.exists(tbi.path))
+      tbiFilename <- paste(vcfFilename, ".tbi", sep="")
+      stopifnot(file.exists(tbiFilename))
       gr <- GRanges(chrom, IRanges(start, end))
       print(ranges(gr))
-      #browser()
       params <- ScanVcfParam(which=gr, samples=sampleIDs)
-      vcf <- readVcf(TabixFile(gz.path), "hg38", params)
+      vcf <- readVcf(TabixFile(vcfFilename), obj@genome, params)
       #browser()
       tempFile <- tempfile(fileext=".vcf")
       if(!obj@quiet) printf("  about to write region of vcf to '%s'", tempFile)

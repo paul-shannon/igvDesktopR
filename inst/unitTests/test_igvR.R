@@ -124,7 +124,7 @@ test_displayGWASTable <- function()
 #------------------------------------------------------------------------------------------------------------------------
 test_displayScoredFeatures <- function()
 {
-   print("--- test_displayScoredFeatures")
+   printf("--- test_displayScoredFeatures")
    count <- 8
    chr <- rep("chr5", count)
    start <- c(88364636, 88364636, 88364787, 88365143, 88365146, 88365146, 88365146, 88365168)
@@ -141,37 +141,14 @@ test_displayScoredFeatures <- function()
 
 } # test_displayScoredFeatures
 #------------------------------------------------------------------------------------------------------------------------
-private_test_displayVcfRegion <- function()
-{
-   printf("--- test_displayVcfRegion")
-
-   vcfDirectory <- system.file(package="igvR", "extdata", "vcf")
-   checkTrue(file.exists(file.path(vcfDirectory, "chr5-sub.vcf.gz")))
-   checkTrue(file.exists(file.path(vcfDirectory, "chr5-sub.vcf.gz.tbi")))
-
-   igv <- igvR()
-
-   checkTrue(connected(igv))
-
-      # a 37.5kb region around the several mef2c transcription start sites
-   start <- 88873095
-   stop <-  88910640
-
-   apoe.dementia.samples <- c("002_S_1268", "002_S_4521", "003_S_1057", "06_S_4346", "006_S_4546")
-   control.samples       <- c("002_S_0413", "002_S_0685", "002_S_1261", "002_S_1280", "002_S_4213")
-
-   displayVcfRegion(igv, "chr5", start, stop, vcfDirectory, sampleIDs=apoe.dementia.samples)
-   displayVcfRegion(igv, "chr5", start, stop, vcfDirectory, sampleIDs=control.samples)
-
-} # test_displayVcfRegion
-#------------------------------------------------------------------------------------------------------------------------
 test_displayVcfRegion <- function()
 {
    printf("--- test_displayVcfRegion")
 
    vcfDirectory <- system.file(package="igvR", "extdata", "vcf")
-   checkTrue(file.exists(file.path(vcfDirectory, "chr22-sub.vcf.gz")))
-   checkTrue(file.exists(file.path(vcfDirectory, "chr22-sub.vcf.gz.tbi")))
+   vcfFile <- file.path(vcfDirectory, "chr22-sub.vcf.gz")
+   checkTrue(file.exists(vcfFile))
+   checkTrue(file.exists(sprintf("%s.tbi", vcfFile)))
 
    if(!exists("igv"))
        igv <- igvR()
@@ -186,75 +163,11 @@ test_displayVcfRegion <- function()
    group.2 <- c("HG00097", "HG00099", "HG00100")
 
       # display all samples in 1 track, then two more tracks with 2 and 3 samples respectively
-   displayVcfRegion(igv, "chr22", start, end, vcfDirectory)
-   displayVcfRegion(igv, "chr22", start, end, vcfDirectory, sampleIDs=group.1)
-   displayVcfRegion(igv, "chr22", start, end, vcfDirectory, sampleIDs=group.2)
+   displayVcfRegion(igv, "chr22", start, end, vcfFile)
+   displayVcfRegion(igv, "chr22", start, end, vcfFile, sampleIDs=group.1)
+   displayVcfRegion(igv, "chr22", start, end, vcfFile, sampleIDs=group.2)
 
    goto(igv, "chr22", start, end)
 
 } # test_displayVcfRegion
 #------------------------------------------------------------------------------------------------------------------------
-# functions stolen from the Biocondcutor sradb package, used as an guide to early development.
-# IGVsocket <- function(host='localhost', port=60151)
-# {
-#    sock = try(make.socket(host,port))
-#    if(inherits(sock,'try-error')) {
-#      stop(sprintf("Make sure that IGV is running on host %s and that IGV is set to accept commands on port %d",host,port))
-#      }
-#    print(sock)
-#    return(sock)
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# .socketWrite<- function(sock,string)
-# {
-#    print(string)
-#    write.socket(sock,string)
-#    printf(".socketWrite waiting for response");
-#    response <- read.socket(sock)
-#    printf("       response received: %s", response);
-#
-#    return(response)
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# IGVload <-  function (sock, files)
-# {
-#    if(length(files)<1) stop('Files must be specified')
-#    message(basename(files))
-#    .socketWrite(sock,paste('load',paste(files,collapse=','),'\n'))
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# IGVgoto <- function(sock,region)
-# {
-#    .socketWrite(sock, paste('goto',region,'\n'))
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# IGVgenome <- function(sock,genome="hg18")
-# {
-#    .socketWrite(sock,paste('genome',genome,'\n'))
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# IGVexit <- function(sock)
-# {
-#    .socketWrite(sock,paste('exit', '\n'))
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# IGVping <- function(sock)
-# {
-#    .socketWrite(sock,paste('echo', '\n'))
-# }
-# #------------------------------------------------------------------------------------------------------------------------
-# testRaw <- function()
-# {
-#    s <<- IGVsocket()
-#    f <<- system.file(package="igvR", "extdata", "sample.bed")
-#    IGVload(s, f)
-#
-#    for (i in 1:5){
-#      IGVgoto(s, "chr5:80000-620000")
-#      IGVgoto(s, "chr22:800-6200")
-#      }
-#
-#
-# } # testRaw
-# #------------------------------------------------------------------------------------------------------------------------
-#
