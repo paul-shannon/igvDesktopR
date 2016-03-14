@@ -11,6 +11,8 @@ runTests <- function()
    test_connected()
    clearAllTracks(igv)
    test_sampleBedFile()
+   test_sendRawCommand()
+   test_trackVisibility()
    test_goto()
    test_displayBedTable()
    test_displayGWASTable()
@@ -78,14 +80,15 @@ test_displayBedTable <- function()
    start <- rep(100470155, 3)
    end <- rep(100470168, 3)
    name <- c("MA0679.1", "MA0756.1", "MA0757.1")
+   name <- rep(" ", 3)
    score <- c(56.0, 58.6, 60.5)
    strand <- rep("+", 3)
    tbl <- data.frame(chr=chr, start=start, end=end, name=name, score=score, strand=strand, stringsAsFactors=FALSE)
 
-  if(!exists("igv"))
+   if(!exists("igv"))
       igv <- igvR()
 
-   result <- displayBedTable(igv, tbl, name="3 motifs")
+   result <- displayBedTable(igv, tbl, name="X3")
    checkEquals(result, "OK\n")
    result <- goto(igv, "chr1", start[1] - 20, end[3] + 20)
    checkEquals(result, "OK\n")
@@ -170,4 +173,36 @@ test_displayVcfRegion <- function()
    goto(igv, "chr22", start, end)
 
 } # test_displayVcfRegion
+#------------------------------------------------------------------------------------------------------------------------
+test_sendRawCommand <- function()
+{
+   printf("--- test_sendRawCommand")
+   for(i in 1:3){
+      sendRawCommand(igv, "goto chr1:169,436,527-169,802,250")
+      sendRawCommand(igv, "goto chr1:169,510,853-169,876,576")
+      } # for i
+
+} # test_sendRawCommand
+#------------------------------------------------------------------------------------------------------------------------
+test_trackVisibility <- function()
+{
+   printf("--- test_trackVisibility")
+   start <- c(100, 100, 100, 200, 300, 400)
+   end <-   c(150, 150, 176, 220, 380, 500)
+   count <- length(start)
+   strand <- rep("+", count)
+   chr <- rep("chr1", count)
+
+   feature.names <- sprintf("FP.%02d", 1:count)
+   scores <- as.integer(runif(count, 1, 100))
+
+   tbl <- data.frame(chr=chr, start=start, end=end, name=feature.names, score=scores, strand=strand, stringsAsFactors=FALSE)
+   displayBedTable(igv, tbl, "foo")
+   goto(igv, "chr1", 50, 550)
+
+   expandTrack(igv, "foo.bed")
+   squishTrack(igv, "foo.bed")
+   collapseTrack(igv, "foo.bed")
+
+} # test_trackVisibility
 #------------------------------------------------------------------------------------------------------------------------

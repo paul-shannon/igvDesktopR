@@ -11,8 +11,12 @@ exportMethods(
    displayGWASTable,
    displayScoredFeatures,
    displayVcfRegion,
-   clearAllTracks
-  )
+   clearAllTracks,
+   expandTrack,
+   squishTrack,
+   collapseTrack,
+   sendRawCommand
+   )
 
 export(
    igvR

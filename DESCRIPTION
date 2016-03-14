@@ -1,8 +1,8 @@
 Package: igvR
 Type: Package
 Title: Control IGV, the Integrative Genomics Viewer, from R
-Version: 0.99.20
-Date: 2016-03-10
+Version: 0.99.23
+Date: 2016-03-14
 Author: Paul Shannon
 Maintainer:  <pshannon@systemsbiology.org>
 Depends: R (>= 3.2.3), GenomicRanges, VariantAnnotation
